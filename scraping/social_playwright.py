@@ -3,10 +3,11 @@ import time
 import os
 import glob
 
+
 # --- INSTAGRAM ---
 def scrape_instagram_profile(url, storage_path="cookie/ig_auth.json"):
     with sync_playwright() as p:
-        browser = p.chromium.launch(headless=False)
+        browser = p.chromium.launch(headless=True)
         context = browser.new_context(storage_state=storage_path)
         page = context.new_page()
 
@@ -26,7 +27,9 @@ def scrape_instagram_profile(url, storage_path="cookie/ig_auth.json"):
             # Publications
             posts = None
             try:
-                posts_text = page.locator("header section ul li:nth-child(1) span").first.inner_text(timeout=5000)
+                posts_text = page.locator(
+                    "header section ul li:nth-child(1) span"
+                ).first.inner_text(timeout=5000)
                 posts = posts_text.strip()
             except:
                 print("⚠️ Publications non trouvées")
@@ -34,34 +37,33 @@ def scrape_instagram_profile(url, storage_path="cookie/ig_auth.json"):
             # Abonnés
             followers = None
             try:
-                followers_span = page.locator("header section ul li:nth-child(2) span").first
-                followers = followers_span.get_attribute("title") or followers_span.inner_text(timeout=5000)
+                followers_span = page.locator(
+                    "header section ul li:nth-child(2) span"
+                ).first
+                followers = followers_span.get_attribute(
+                    "title"
+                ) or followers_span.inner_text(timeout=5000)
             except:
                 print("⚠️ Abonnés non trouvés")
 
             # Abonnements
             following = None
             try:
-                following_span = page.locator("header section ul li:nth-child(3) span").first
+                following_span = page.locator(
+                    "header section ul li:nth-child(3) span"
+                ).first
                 following = following_span.inner_text(timeout=5000).strip()
             except:
                 print("⚠️ Abonnements non trouvés")
 
-            return {
-                "followers": followers,
-                "following": following,
-                "posts": posts
-            }
+            return {"followers": followers, "following": following, "posts": posts}
 
         except Exception as e:
             print(f"⚠️ Erreur Instagram : {e}")
-            return {
-                "followers": None,
-                "following": None,
-                "posts": None
-            }
+            return {"followers": None, "following": None, "posts": None}
         finally:
             browser.close()
+
 
 # --- FACEBOOK ---
 def scrape_facebook_page(url, storage_path="cookie/fb_auth.json", debug=False):
@@ -69,12 +71,18 @@ def scrape_facebook_page(url, storage_path="cookie/fb_auth.json", debug=False):
     os.makedirs(screenshot_dir, exist_ok=True)
 
     existing = glob.glob(os.path.join(screenshot_dir, "screenshot_fb_debug_*.png"))
-    nums = [int(f.split("_")[-1].split(".")[0]) for f in existing if f.split("_")[-1].split(".")[0].isdigit()]
+    nums = [
+        int(f.split("_")[-1].split(".")[0])
+        for f in existing
+        if f.split("_")[-1].split(".")[0].isdigit()
+    ]
     next_num = max(nums) + 1 if nums else 1
-    screenshot_path = os.path.join(screenshot_dir, f"screenshot_fb_debug_{next_num}.png")
+    screenshot_path = os.path.join(
+        screenshot_dir, f"screenshot_fb_debug_{next_num}.png"
+    )
 
     with sync_playwright() as p:
-        browser = p.chromium.launch(headless=False)
+        browser = p.chromium.launch(headless=True)
         context = browser.new_context(storage_state=storage_path)
         page = context.new_page()
 
@@ -123,17 +131,24 @@ def scrape_facebook_page(url, storage_path="cookie/fb_auth.json", debug=False):
                 print(f"❌ Pas d'email détecté : {e}")
 
             try:
-                website = page.locator("a[href^='http']:not([href*='facebook'])").first.inner_text()
+                website = page.locator(
+                    "a[href^='http']:not([href*='facebook'])"
+                ).first.inner_text()
                 print(f"🌐 Site web trouvé : {website}")
             except Exception as e:
                 print(f"❌ Pas de site web détecté : {e}")
 
             try:
-                address_block = page.locator("[aria-label*='adresse'], [data-pagelet*='ProfileTiles']").first
+                address_block = page.locator(
+                    "[aria-label*='adresse'], [data-pagelet*='ProfileTiles']"
+                ).first
                 if address_block:
                     full_text = address_block.inner_text()
                     for line in full_text.split("\n"):
-                        if any(keyword in line.lower() for keyword in ["rue", "avenue", "place", "boulevard"]):
+                        if any(
+                            keyword in line.lower()
+                            for keyword in ["rue", "avenue", "place", "boulevard"]
+                        ):
                             address = line.strip()
                             print(f"📍 Adresse trouvée : {address}")
                             break
@@ -204,11 +219,12 @@ def scrape_facebook_page(url, storage_path="cookie/fb_auth.json", debug=False):
                 if post_blocks.count() > 0:
                     last_text = post_blocks.nth(0).inner_text()
                     time_tag = post_blocks.nth(0).locator("time")
-                    post_date = time_tag.get_attribute("datetime") if time_tag.count() > 0 else None
-                    last_post = {
-                        "text": last_text[:300],
-                        "date": post_date
-                    }
+                    post_date = (
+                        time_tag.get_attribute("datetime")
+                        if time_tag.count() > 0
+                        else None
+                    )
+                    last_post = {"text": last_text[:300], "date": post_date}
                     print(f"🗞️ Dernier post : {last_post}")
             except Exception as e:
                 print(f"❌ Erreur extraction post : {e}")
@@ -225,7 +241,7 @@ def scrape_facebook_page(url, storage_path="cookie/fb_auth.json", debug=False):
                 "address": address,
                 "has_video": has_video,
                 "last_post": last_post,
-                "screenshot": screenshot_path
+                "screenshot": screenshot_path,
             }
 
         except Exception as e:
