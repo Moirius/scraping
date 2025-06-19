@@ -1,4 +1,4 @@
-# Utilise l'image officielle Playwright avec toutes les dépendances
+# Utilise l'image Playwright avec Python et navigateurs préinstallés
 FROM mcr.microsoft.com/playwright/python:v1.52.0-jammy
 
 # Définir le répertoire de travail
@@ -7,12 +7,12 @@ WORKDIR /app
 # Copier les fichiers du projet
 COPY . .
 
-# Installer les dépendances Python
+# Installer les dépendances
 RUN pip install --upgrade pip
 RUN pip install -r requirements.txt
 
-# Playwright est déjà installé dans l'image, mais on s'assure que les navigateurs le sont
+# Télécharger les navigateurs (déjà dans l’image, mais on s’assure)
 RUN playwright install
 
-# Lancement de ton script (change selon ton point d’entrée)
+# Lancer ton script Python principal
 CMD ["python", "main.py"]
