@@ -8,7 +8,7 @@ import re
 # --- INSTAGRAM ---
 def scrape_instagram_profile(url, storage_path="cookie/ig_auth.json"):
     with sync_playwright() as p:
-        browser = p.chromium.launch(headless=False)
+        browser = p.chromium.launch(headless=True)
         context = browser.new_context(storage_state=storage_path)
         page = context.new_page()
 
@@ -78,7 +78,7 @@ def scrape_facebook_page(url, storage_path="cookie/fb_auth.json", debug=False):
     screenshot_path = os.path.join(screenshot_dir, f"screenshot_fb_debug_{next_num}.png")
 
     with sync_playwright() as p:
-        browser = p.chromium.launch(headless=False)
+        browser = p.chromium.launch(headless=True)
         context = browser.new_context(storage_state=storage_path)
         page = context.new_page()
 
