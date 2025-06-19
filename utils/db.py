@@ -4,7 +4,7 @@ import re
 from utils.logger import logger
 
 # 📁 Chemin vers la base de données SQLite
-DB_PATH = os.path.join("data", "leads.sqlite")
+DB_PATH = os.getenv("DB_PATH", os.path.join("data", "leads.sqlite"))
 
 # ✅ Regex simple pour emails valides
 EMAIL_REGEX = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
