@@ -61,7 +61,7 @@ Pour chaque entreprise :
 
 ```
 
-prospection-bretagne/
+Scrapping/
 ├── scraping/
 │   ├── search\_google.py
 │   ├── extract\_socials.py
@@ -80,6 +80,8 @@ prospection-bretagne/
 ├── main.py
 ├── requirements.txt
 └── README.md
+└── Dockerfile
+└── render.yaml
 
 ````
 
@@ -114,15 +116,24 @@ python main.py
 
 ---
 
+
+
+🌐 Déploiement sur Render
+Ce projet est déployé automatiquement sur Render, une plateforme cloud permettant d'héberger des applications web et des scripts backend. Le service est configuré pour construire l'image Docker définie dans le Dockerfile, installer les dépendances via requirements.txt, et exécuter le script du bot Telegram (telegram_bot/bot.py) au démarrage du conteneur.
+
+
+
+
 ## ✅ État actuel
 
 * ✔️ Scraping Google Maps
 * ✔️ Scraping site web + réseaux sociaux (Facebook, Instagram)
 * ✔️ Stockage en base
+* ✔️ Intégration Telegram
 * 🚧 Scraping événementiel
 * 🚧 Diagnostic automatisé
 * 🚧 Génération d’email
-* 🚧 Intégration Telegram
+
 
 ---
 
