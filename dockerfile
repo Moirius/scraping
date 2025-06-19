@@ -8,5 +8,5 @@ RUN pip install -r requirements.txt
 
 RUN playwright install
 
-# ⬇️ Lancer le bot
-CMD ["python", "bot.py"]
+# Lance le bot depuis son sous-dossier
+CMD ["python", "telegram_bot/bot.py"]
