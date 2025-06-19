@@ -1,60 +1,115 @@
 import os
 import sys
+import asyncio
 
-# Ajoute la racine du projet au path
+# Ajoute la racine du projet au path pour les imports
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
+from dotenv import load_dotenv
 from telegram import Update
 from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
-from dotenv import load_dotenv
-from scraping.search_google import get_fake_results
 
-# Charger les variables d'environnement depuis le .env
+from scraping.search_google import search_google_places
+from utils.logger import logger
+
+# Chargement des variables d'environnement
 load_dotenv()
-
 BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
 
 if not BOT_TOKEN:
     raise ValueError("🚨 TELEGRAM_BOT_TOKEN est manquant dans le .env")
 
-# Commande /start
-async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("👋 Bienvenue sur le bot de prospection vidéo en Bretagne !\nUtilise la commande /entreprises <mot-clé> <ville>")
+DB_PATH = os.path.join("data", "leads.sqlite")
+LOG_PATH = "scraping.log"
 
-# Commande /entreprises
-async def entreprises(update: Update, context: ContextTypes.DEFAULT_TYPE):
+
+async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Message d'accueil et aide."""
+    text = (
+        "🤖 *Bot de prospection*\n"
+        "\nCommandes disponibles :\n"
+        "/run - lancer main.py\n"
+        "/db - récupérer la base SQLite\n"
+        "/logs - recevoir les logs\n"
+        "/entreprises <mot> <ville> - recherche rapide"
+    )
+    await update.message.reply_text(text, parse_mode="Markdown")
+
+
+async def run_scraping(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Lance main.py puis renvoie le résultat."""
+    await update.message.reply_text("🚀 Lancement du scraping...")
+
+    process = await asyncio.create_subprocess_exec(
+        sys.executable,
+        "main.py",
+        stdout=asyncio.subprocess.PIPE,
+        stderr=asyncio.subprocess.STDOUT,
+    )
+    stdout, _ = await process.communicate()
+    await update.message.reply_text(f"✅ Terminé (code {process.returncode})")
+
+    output = stdout.decode("utf-8")
+    if output:
+        snippet = output[-4000:]
+        await update.message.reply_text(f"```\n{snippet}\n```", parse_mode="Markdown")
+
+
+async def send_db(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Envoie la base SQLite."""
+    if os.path.exists(DB_PATH):
+        with open(DB_PATH, "rb") as f:
+            await update.message.reply_document(f)
+    else:
+        await update.message.reply_text("❌ Base de données introuvable")
+
+
+async def send_logs(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Envoie le fichier de logs."""
+    if os.path.exists(LOG_PATH):
+        with open(LOG_PATH, "rb") as f:
+            await update.message.reply_document(f)
+    else:
+        await update.message.reply_text("❌ Fichier de logs introuvable")
+
+
+async def entreprises(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Recherche rapide d'entreprises via Google Places."""
     if len(context.args) < 2:
-        await update.message.reply_text("❗ Format attendu : /entreprises <mot-clé> <ville>")
+        await update.message.reply_text("❗ Format : /entreprises <mot-clé> <ville>")
         return
 
     keyword = context.args[0]
     city = " ".join(context.args[1:])
+    await update.message.reply_text(f"🔍 Recherche pour {keyword} à {city}")
 
-    await update.message.reply_text(f"🔍 Recherche en cours pour : *{keyword}* à *{city}*", parse_mode="Markdown")
-
-    # Récupérer les entreprises fictives
-    results = get_fake_results(keyword, city)
-
+    results = search_google_places(keyword, city, max_results=5)
     if not results:
-        await update.message.reply_text("Aucune entreprise trouvée.")
+        await update.message.reply_text("Aucune entreprise trouvée")
         return
 
-    # Formatage propre des résultats
     for r in results:
-        texte = f"""🏢 *{r['nom']}*
-📍 {r['adresse']}
-📞 {r['téléphone']}
-🌐 {r['site'] or 'Site indisponible'}
-✉️ {r['email'] or 'Email non trouvé'}"""
+        texte = (
+            f"🏢 *{r.get('nom', '')}*\n"
+            f"📍 {r.get('adresse', 'N/A')}\n"
+            f"📞 {r.get('téléphone', 'N/A')}\n"
+            f"🌐 {r.get('site', 'N/A')}"
+        )
         await update.message.reply_text(texte, parse_mode="Markdown")
 
-# Lancement du bot
-def main():
+
+def main() -> None:
     app = ApplicationBuilder().token(BOT_TOKEN).build()
+
     app.add_handler(CommandHandler("start", start))
+    app.add_handler(CommandHandler("run", run_scraping))
+    app.add_handler(CommandHandler("db", send_db))
+    app.add_handler(CommandHandler("logs", send_logs))
     app.add_handler(CommandHandler("entreprises", entreprises))
-    print("🤖 Bot lancé. Ctrl+C pour arrêter.")
+
+    logger.info("🤖 Bot lancé")
     app.run_polling()
+
 
 if __name__ == "__main__":
     main()

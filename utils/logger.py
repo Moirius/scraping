@@ -16,5 +16,11 @@ console_handler.setLevel(logging.INFO)
 console_handler.setFormatter(formatter)
 logger.addHandler(console_handler)
 
+# Enregistre aussi les logs dans un fichier pour consultation
+file_handler = logging.FileHandler("scraping.log", encoding="utf-8")
+file_handler.setLevel(logging.INFO)
+file_handler.setFormatter(formatter)
+logger.addHandler(file_handler)
+
 # Évite les doublons de logs
 logger.propagate = False
