@@ -1,0 +1,15 @@
+services:
+  - type: worker
+    name: scraping-worker
+    env: python
+    buildCommand: |
+      pip install -r requirements.txt
+      playwright install --with-deps
+    startCommand: python main.py
+
+  - type: worker
+    name: telegram-bot
+    env: python
+    buildCommand: |
+      pip install -r requirements.txt
+    startCommand: python telegram_bot/bot.py

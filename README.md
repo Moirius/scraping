@@ -48,12 +48,12 @@ Pour chaque entreprise :
 
 | Composant         | Technologie                       |
 |------------------|-----------------------------------|
-| Scraping Web      | Playwright, Requests, BeautifulSoup |
-| Réseaux sociaux   | Scraping dynamique (Facebook / Instagram) |
+| Scraping Web      | Scraping dynamique BeautifulSoup |
+| Réseaux sociaux   | Playwright, Requests, (Facebook / Instagram) |
 | Stockage          | SQLite                            |
 | Analyse & Email   | GPT + règles simples (à venir)    |
 | Interface Bot     | python-telegram-bot (à venir)     |
-| Déploiement       | Render / Docker (prévu)           |
+| Déploiement       | Render (prévu)           |
 
 ---
 
