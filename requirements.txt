@@ -1,5 +1,27 @@
-playwright
+# Core
 requests
-python-dotenv
 beautifulsoup4
-python-telegram-bot
+python-dotenv
+lxml
+
+# Scraping dynamique
+playwright
+asyncio
+
+# Logging et gestion
+loguru
+
+# Base de données
+sqlite-utils
+
+# (optionnel) Pour outils CLI ou future UI
+rich
+
+# (optionnel) Pour bot Telegram
+python-telegram-bot==20.3
+
+# (optionnel) Pour analyse sémantique plus tard
+openai
+
+# Pour compatibilité
+certifi

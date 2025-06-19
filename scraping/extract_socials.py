@@ -46,3 +46,11 @@ def extract_infos_from_site(url):
         })
 
     return infos
+
+
+
+def extract_website_infos(url):
+    """
+    Alias pour extract_infos_from_site — utilisé pour scrapper un site trouvé via Facebook.
+    """
+    return extract_infos_from_site(url)

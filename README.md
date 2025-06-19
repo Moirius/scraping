@@ -1,128 +1,137 @@
-# 🎬 Assistant de Prospection Vidéo Intelligent
+# 🎬 Assistant de Prospection Vidéo Intelligent (en cours de développement)
 
 ## 📌 Objectif
-Développer un outil automatisé de prospection pour vidéastes, permettant de :
-- Trouver des entreprises locales (Bretagne) selon un mot-clé (ex. "restauration Rennes")
+
+Développer un assistant intelligent pour les vidéastes, capable de :
+- Trouver des entreprises locales (ex : “restauration Rennes”)
 - Diagnostiquer leur présence en ligne et leur communication vidéo
+- Collecter automatiquement leurs coordonnées et réseaux sociaux
 - Générer un email de prospection personnalisé
-- Être utilisable facilement via Telegram
+- Être utilisable facilement (ex : via Telegram)
 - Rester dans un environnement gratuit ou low-cost
 
-## ⚙️ Fonctionnalités
+---
 
-### 1. 🔍 Recherche d'entreprises
-- Scraping via Google Maps / PagesJaunes
-- Entrée : mot-clé + localisation
-- Résultat : liste d’entreprises locales (5 à 20)
+## ⚙️ Fonctionnalités en cours
 
-### 2. 📦 Scraping de données utiles
+### 1. 🔍 Recherche d'entreprises locales
+- Recherche via Google Places API
+- Entrée : `mot-clé + ville`
+- Exemple : `coiffure Brest` → 5 à 20 entreprises
+
+### 2. 🌐 Scraping web + réseaux sociaux
 Pour chaque entreprise :
-- Nom, adresse, téléphone, email, site
-- Réseaux sociaux (Instagram, Facebook, LinkedIn, etc.)
-- Nom du responsable (si dispo)
-- Description d’activité, dernière publication, etc.
+- Scraping du site web (emails, liens vers les réseaux sociaux)
+- Scraping des profils Instagram et Facebook (followers, likes, adresse, email…)
+- Capacité à détecter et re-scraper un site web trouvé sur Facebook (⚠️ boucles infinies évitées)
 
-### 3. 🧠 Diagnostic
-- Analyse de leur présence vidéo (YouTube, reels, etc.)
+### 3. 📩 Stockage structuré
+- Base de données SQLite (`leads.sqlite`)
+- Insertion automatique des leads, infos web, avis, réseaux sociaux
+
+### 4. 🧠 Analyse (à venir)
+- Détection de présence vidéo (reels, YouTube, etc.)
 - Score d’opportunité
-- Recommandations automatiques
+- Suggestions automatisées
 
-### 4. ✉️ Génération d’email
-- Template dynamique
-- Ajout automatique du diagnostic
-- Email personnalisable
+### 5. ✉️ Email de prospection (à venir)
+- Template dynamique avec diagnostic
+- Export ou envoi automatisé
 
-### 5. 🤖 Interface Telegram
-Commande simple :
-```
-/entreprises coiffure Brest
-```
+### 6. 🤖 Interface Telegram (à venir)
+- Commande type : `/entreprises coiffure Brest`
+- → renvoi de leads + diagnostic + email
 
-→ Liste enrichie + diagnostic + email prêts à l'emploi
+---
 
-### 6. 🎉 Scraping d’événements locaux
-- Nom, date, lieu, contact
-- Analyse des opportunités vidéo (captation, teaser…)
+## 🧰 Stack technique
 
-## 🧰 Stack Technique
+| Composant         | Technologie                       |
+|------------------|-----------------------------------|
+| Scraping Web      | Playwright, Requests, BeautifulSoup |
+| Réseaux sociaux   | Scraping dynamique (Facebook / Instagram) |
+| Stockage          | SQLite                            |
+| Analyse & Email   | GPT + règles simples (à venir)    |
+| Interface Bot     | python-telegram-bot (à venir)     |
+| Déploiement       | Render / Docker (prévu)           |
 
-| Composant | Technologie |
-|----------|-------------|
-| Scraping Web | Playwright / BeautifulSoup / Requests |
-| Bot Telegram | python-telegram-bot |
-| Stockage | SQLite (PostgreSQL optionnel) |
-| Diagnostic | GPT (prompt + règles simples) |
-| Déploiement | Render.com (free tier) |
-| Export | CSV / Google Sheets (optionnel) |
+---
 
 ## 📁 Structure du projet
 
 ```
+
 prospection-bretagne/
 ├── scraping/
-│   ├── search_google.py
-│   ├── extract_socials.py
-│   └── analyse_presence.py
-├── telegram_bot/
-│   └── bot.py
+│   ├── search\_google.py
+│   ├── extract\_socials.py
+│   ├── social\_playwright.py
+│   └── save\_facebook\_session.py
+├── utils/
+│   ├── db.py
+│   ├── logger.py
+│   └── helpers.py
 ├── data/
 │   └── leads.sqlite
 ├── templates/
-│   └── mail_template.txt
-├── utils/
-│   └── format_diagnostic.py
-├── cron/
-│   └── check_events.py
+│   └── mail\_template.txt (à venir)
+├── telegram\_bot/
+│   └── bot.py (à venir)
 ├── main.py
 ├── requirements.txt
 └── README.md
-```
 
-## 🚀 Installation
+````
+
+---
+
+1. Installer les dépendances :
 
 ```bash
-git clone https://github.com/votre-user/prospection-bretagne.git
-cd prospection-bretagne
+
 pip install -r requirements.txt
 ```
 
-Configurer le bot Telegram via `.env` :
+2. Configurer vos clés d’API (Google, OpenAI...) dans un fichier `.env` ou directement dans le code :
 
-```
-TELEGRAM_TOKEN=xxx
+📌 Si vous utilisez un agent IA (ex. : via une interface comme OpenAI), les clés API sont renseignées dans les paramètres d’environnement de l’interface.
+
+📌 Sinon, les clés sont sauvegardées localement dans un fichier `.env`, à la racine du projet, par exemple :
+
+GOOGLE_API_KEY=xxx
 OPENAI_API_KEY=xxx
-```
+
+
+---
 
 ## ▶️ Utilisation
 
-Lancer le bot :
+Lancer la version CLI :
+
 ```bash
 python main.py
 ```
 
-Depuis Telegram :
-```bash
-/entreprises restauration Rennes
-```
+---
 
-## 🗺️ Roadmap MVP
+## ✅ État actuel
 
-- ✅ Définir fiche projet
-- ✅ Créer bot Telegram test
-- ✅ Scraper entreprises (Google Maps)
-- ⏳ Scraper réseaux sociaux
-- ⏳ Diagnostiquer présence vidéo
-- ⏳ Générer email personnalisé
-- ⏳ Scraper événements
-- ⏳ Déploiement Render
+* ✔️ Scraping Google Maps
+* ✔️ Scraping site web + réseaux sociaux (Facebook, Instagram)
+* ✔️ Stockage en base
+* 🚧 Scraping événementiel
+* 🚧 Diagnostic automatisé
+* 🚧 Génération d’email
+* 🚧 Intégration Telegram
 
-## 🔮 Idées v2+
+---
 
-- Envoi automatique des emails
-- Interface web de suivi
-- IA scoring avancé
-- Historique, relances automatisées
+## 🔮 Idées futures
 
-## 🤝 Contribuer
+* Envoi automatique des emails
+* Interface web de suivi
+* Tableau de bord de scoring
+* Relances programmées
+* Version SaaS multi-utilisateurs
 
-Pull requests bienvenues ! Contact : `prenom.nom@email.com`
+---

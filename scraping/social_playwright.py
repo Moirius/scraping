@@ -2,6 +2,8 @@ from playwright.sync_api import sync_playwright
 import time
 import os
 import glob
+import re
+
 
 # --- INSTAGRAM ---
 def scrape_instagram_profile(url, storage_path="cookie/ig_auth.json"):
@@ -63,8 +65,10 @@ def scrape_instagram_profile(url, storage_path="cookie/ig_auth.json"):
         finally:
             browser.close()
 
-# --- FACEBOOK ---
 def scrape_facebook_page(url, storage_path="cookie/fb_auth.json", debug=False):
+    import os, re, glob, time
+    from playwright.sync_api import sync_playwright
+
     screenshot_dir = "screenshots/facebook"
     os.makedirs(screenshot_dir, exist_ok=True)
 
@@ -80,7 +84,8 @@ def scrape_facebook_page(url, storage_path="cookie/fb_auth.json", debug=False):
 
         try:
             print(f"🔍 Scraping de la page Facebook : {url}")
-            page.goto(url, timeout=30000)
+            page.goto(url, wait_until="domcontentloaded", timeout=60000)
+            time.sleep(5)
 
             try:
                 accept_btn = page.locator("text=Autoriser tous les cookies").first
@@ -102,7 +107,6 @@ def scrape_facebook_page(url, storage_path="cookie/fb_auth.json", debug=False):
 
             likes = None
             followers = None
-            description = None
             email = None
             phone = None
             website = None
@@ -110,108 +114,92 @@ def scrape_facebook_page(url, storage_path="cookie/fb_auth.json", debug=False):
             last_post = None
             has_video = False
 
-            try:
-                phone = page.locator("a[href^='tel']").first.inner_text()
-                print(f"📞 Téléphone trouvé : {phone}")
-            except Exception as e:
-                print(f"❌ Pas de téléphone détecté : {e}")
-
-            try:
-                email = page.locator("a[href^='mailto']").first.inner_text()
-                print(f"📧 Email trouvé : {email}")
-            except Exception as e:
-                print(f"❌ Pas d'email détecté : {e}")
-
-            try:
-                website = page.locator("a[href^='http']:not([href*='facebook'])").first.inner_text()
-                print(f"🌐 Site web trouvé : {website}")
-            except Exception as e:
-                print(f"❌ Pas de site web détecté : {e}")
-
-            try:
-                address_block = page.locator("[aria-label*='adresse'], [data-pagelet*='ProfileTiles']").first
-                if address_block:
-                    full_text = address_block.inner_text()
-                    for line in full_text.split("\n"):
-                        if any(keyword in line.lower() for keyword in ["rue", "avenue", "place", "boulevard"]):
-                            address = line.strip()
-                            print(f"📍 Adresse trouvée : {address}")
-                            break
-            except Exception as e:
-                print(f"❌ Pas d'adresse trouvée : {e}")
-
-            # Fallback depuis des <span> visibles
-            if not email:
-                try:
-                    email_span = page.locator("span", has_text="@").first
-                    email_candidate = email_span.inner_text().strip()
-                    if "@" in email_candidate and "." in email_candidate:
-                        email = email_candidate
-                        print(f"📧 Email détecté dans un span : {email}")
-                except Exception as e:
-                    print(f"❌ Email non détecté dans span : {e}")
-
-            if not phone:
-                try:
-                    spans = page.locator("span")
-                    for i in range(spans.count()):
-                        txt = spans.nth(i).inner_text()
-                        match = re.search(r"(0|\+33)[1-9](\s?\d{2}){4}", txt)
-                        if match:
-                            phone = match.group()
-                            print(f"📞 Téléphone détecté dans un span : {phone}")
-                            break
-                except Exception as e:
-                    print(f"❌ Téléphone non détecté dans span : {e}")
-
             full_text = page.inner_text("body")
             lines = [line.strip() for line in full_text.split("\n") if line.strip()]
+
+            # 📧 Email
+            match_email = re.search(r"[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+", full_text)
+            if match_email:
+                email = match_email.group()
+                print(f"📧 Email trouvé : {email}")
+
+            # 📞 Téléphone
+            match_phone = re.search(r"(0|\+33)[1-9](\s?\d{2}){4}", full_text)
+            if match_phone:
+                phone = match_phone.group()
+                print(f"📞 Téléphone trouvé : {phone}")
+
+            # 🌐 Site web
+            urls = [line for line in lines if line.startswith("http") and "facebook.com" not in line]
+            for link in urls:
+                if not any(word in link for word in ["reserve", "dish.co", "tripadvisor"]):
+                    website = link
+                    break
+            if not website and urls:
+                website = urls[0]
+            if not website:
+                for line in lines:
+                    if "." in line and "facebook.com" not in line and "@" not in line and len(line) < 60:
+                        website = "https://" + line.strip()
+                        print(f"🌐 Site web fallback : {website}")
+                        break
+            if website:
+                print(f"🌐 Site web trouvé : {website}")
+
+            # 🏠 Adresse
+            for line in lines:
+                if len(line) < 100 and re.search(r"\d+ .*?(rue|avenue|boulevard|place|impasse|allée|france)", line.lower()):
+                    address = line.strip()
+                    print(f"📍 Adresse trouvée : {address}")
+                    break
+
+            # 👍 Likes & Followers
+            match_likes_followers = re.search(r"([\d\s,.Kk]+)\s*J’aime\s*•\s*([\d\s,.Kk]+)\s*followers", full_text)
+            if match_likes_followers:
+                likes = match_likes_followers.group(1).strip()
+                followers = match_likes_followers.group(2).strip()
+                print(f"👍 Likes : {likes}")
+                print(f"👥 Followers : {followers}")
+            else:
+                for line in lines:
+                    if "j’aime" in line.lower() and not likes:
+                        likes = line.strip()
+                        print(f"👍 Likes : {likes}")
+                    if "followers" in line.lower() and not followers:
+                        followers = line.strip()
+                        print(f"👥 Followers : {followers}")
+
+            # 🎥 Présence de vidéo
+            try:
+                video_tags = page.locator("video")
+                iframe_tags = page.locator("iframe[src*='video']")
+                has_video = video_tags.count() > 0 or iframe_tags.count() > 0
+                print(f"🎥 Présence de vidéo : {has_video}")
+            except Exception as e:
+                print(f"❌ Erreur vérif vidéo : {e}")
+
+            # 🗞️ Dernier post
+            try:
+                post_blocks = page.locator("div[role='article']")
+                for i in range(min(post_blocks.count(), 5)):
+                    last_text = post_blocks.nth(i).inner_text().strip()
+                    time_tag = post_blocks.nth(i).locator("time")
+                    post_date = time_tag.get_attribute("datetime") if time_tag.count() > 0 else None
+
+                    if len(last_text) > 50:
+                        last_post = {
+                            "text": last_text[:300],
+                            "date": post_date
+                        }
+                        print(f"🗞️ Dernier post : {last_post}")
+                        break
+            except Exception as e:
+                print(f"❌ Erreur extraction post : {e}")
 
             if debug:
                 print("📄 Lignes de texte scrappées :")
                 for l in lines:
                     print(f"→ {l}")
-
-            for line in lines:
-                lower = line.lower()
-                if "j’aime" in lower and not likes:
-                    likes = line
-                    print(f"👍 Likes détectés : {likes}")
-                if "abonnés" in lower and not followers:
-                    followers = line
-                    print(f"👥 Followers détectés : {followers}")
-                if not email and "@" in line and "." in line:
-                    email = line
-                    print(f"📧 Email fallback : {email}")
-                if not phone:
-                    match = re.search(r"(0|\+33)[1-9](\s?\d{2}){4}", line)
-                    if match:
-                        phone = match.group()
-                        print(f"📞 Téléphone fallback : {phone}")
-                if not website and line.startswith("http") and "facebook" not in line:
-                    website = line
-                    print(f"🌐 Site fallback : {website}")
-
-            try:
-                video_blocks = page.locator("video")
-                has_video = video_blocks.count() > 0
-                print(f"🎥 Présence de vidéo : {has_video}")
-            except Exception as e:
-                print(f"❌ Erreur vérif vidéo : {e}")
-
-            try:
-                post_blocks = page.locator("div[role='article']")
-                if post_blocks.count() > 0:
-                    last_text = post_blocks.nth(0).inner_text()
-                    time_tag = post_blocks.nth(0).locator("time")
-                    post_date = time_tag.get_attribute("datetime") if time_tag.count() > 0 else None
-                    last_post = {
-                        "text": last_text[:300],
-                        "date": post_date
-                    }
-                    print(f"🗞️ Dernier post : {last_post}")
-            except Exception as e:
-                print(f"❌ Erreur extraction post : {e}")
 
             with open("debug_facebook_page.html", "w", encoding="utf-8") as f:
                 f.write(page.content())
