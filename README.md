@@ -84,6 +84,9 @@ prospection-bretagne/
 git clone https://github.com/votre-user/prospection-bretagne.git
 cd prospection-bretagne
 pip install -r requirements.txt
+playwright install
+# si les navigateurs ne se lancent pas :
+# playwright install-deps
 ```
 
 Configurer le bot Telegram via `.env` :
@@ -103,6 +106,14 @@ python main.py
 Depuis Telegram :
 ```bash
 /entreprises restauration Rennes
+```
+
+## ✅ Tests
+
+Lancer tous les tests unitaires :
+
+```bash
+pytest -q
 ```
 
 ## 🗺️ Roadmap MVP

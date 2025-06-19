@@ -8,7 +8,9 @@ import glob
 def scrape_instagram_profile(url, storage_path="cookie/ig_auth.json"):
     with sync_playwright() as p:
         browser = p.chromium.launch(headless=True)
-        context = browser.new_context(storage_state=storage_path)
+        context = browser.new_context(
+            storage_state=storage_path, ignore_https_errors=True
+        )
         page = context.new_page()
 
         try:
@@ -83,7 +85,9 @@ def scrape_facebook_page(url, storage_path="cookie/fb_auth.json", debug=False):
 
     with sync_playwright() as p:
         browser = p.chromium.launch(headless=True)
-        context = browser.new_context(storage_state=storage_path)
+        context = browser.new_context(
+            storage_state=storage_path, ignore_https_errors=True
+        )
         page = context.new_page()
 
         try:

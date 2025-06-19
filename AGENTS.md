@@ -12,7 +12,7 @@ Codex est invité à contribuer à l'amélioration et au développement de cette
 
 ```
 
-scrapping/
+scraping/
 ├── main.py                  # Point d’entrée de l’application
 ├── requirements.txt         # Dépendances Python
 ├── .env                     # Variables sensibles (API keys)
@@ -47,9 +47,9 @@ scrapping/
 ├── logs/                    # Logs d’exécution
 │   └── prospection.log
 │
-├── tests/                   # Tests manuels
-│   ├── test\_facebook.py
-│   └── test\_instagram.py
+├── tests/                   # Tests unitaires
+│   ├── test\_db.py
+│   └── test\_extract_socials.py
 │
 ├── README.md
 └── AGENTS.md
@@ -103,10 +103,10 @@ pip install ruff
 ruff check .
 ```
 
-### Tests (manuels pour l’instant)
+### Tests
 
 ```bash
-python tests/test_instagram.py
+pytest -q
 ```
 
 ---
