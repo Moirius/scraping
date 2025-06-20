@@ -29,8 +29,9 @@ def scrape_instagram_profile(url, storage_path="cookie/ig_auth.json"):
             # Publications
             posts = None
             try:
-                posts_text = page.locator("header section ul li:nth-child(1) span").first.inner_text(timeout=5000)
-                posts = posts_text.strip()
+                posts_locator = page.locator("header section ul li:nth-child(1) span").first
+                posts_text = posts_locator.inner_text(timeout=5000) if posts_locator else None
+                posts = posts_text.strip() if posts_text else None
             except Exception:
                 logger.warning("⚠️ Publications non trouvées")
 
@@ -38,7 +39,8 @@ def scrape_instagram_profile(url, storage_path="cookie/ig_auth.json"):
             followers = None
             try:
                 followers_span = page.locator("header section ul li:nth-child(2) span").first
-                followers = followers_span.get_attribute("title") or followers_span.inner_text(timeout=5000)
+                if followers_span:
+                    followers = followers_span.get_attribute("title") or followers_span.inner_text(timeout=5000)
             except Exception:
                 logger.warning("⚠️ Abonnés non trouvés")
 
@@ -46,7 +48,9 @@ def scrape_instagram_profile(url, storage_path="cookie/ig_auth.json"):
             following = None
             try:
                 following_span = page.locator("header section ul li:nth-child(3) span").first
-                following = following_span.inner_text(timeout=5000).strip()
+                if following_span:
+                    following_text = following_span.inner_text(timeout=5000)
+                    following = following_text.strip() if following_text else None
             except Exception:
                 logger.warning("⚠️ Abonnements non trouvés")
 
