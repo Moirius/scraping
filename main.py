@@ -53,6 +53,9 @@ def run_pipeline(keyword="restauration", city="Rennes", target_count=5):
     for res in results:
         logger.info("✅ Entreprise trouvée :")
         for k, v in res.items():
+            if k == "avis":
+                logger.info(f"  avis: {len(v)} avis")
+                continue
             logger.info(f"  {k}: {v}")
         logger.info("-----")
 
