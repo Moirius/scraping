@@ -119,7 +119,13 @@ python main.py
 
 
 🌐 Déploiement sur Render
-Ce projet est déployé automatiquement sur Render, une plateforme cloud permettant d'héberger des applications web et des scripts backend. Le service est configuré pour construire l'image Docker définie dans le Dockerfile, installer les dépendances via requirements.txt, et exécuter le script du bot Telegram (telegram_bot/bot.py) au démarrage du conteneur.
+Le dépôt contient un fichier `render.yaml` qui crée un service de type *worker*.
+Render construit l'image à partir du `Dockerfile`, installe les dépendances
+et lance `telegram_bot/bot.py`. Lors de la création du service, veillez à
+sélectionner **Worker** (et non Web Service), sinon la plate‑forme tentera de
+détecter un port ouvert et affichera l'erreur « Port scan timeout reached ».
+Il faut également éviter d'exécuter plusieurs conteneurs en parallèle afin de
+ne pas obtenir l'erreur Telegram « terminated by other getUpdates request ».
 
 
 
