@@ -51,10 +51,10 @@ def run_pipeline(keyword="restauration", city="Rennes", target_count=5):
     save_leads(results)
 
     for res in results:
-        print("✅ Entreprise trouvée :")
+        logger.info("✅ Entreprise trouvée :")
         for k, v in res.items():
-            print(f"  {k}: {v}")
-        print("-----")
+            logger.info(f"  {k}: {v}")
+        logger.info("-----")
 
     logger.info("🌐 Scraping des sites web pour extraire les réseaux sociaux et emails")
 
