@@ -43,10 +43,11 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
 
 async def run_scraping(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    """Exécute run_pipeline en tâche de fond et renvoie le résultat."""
+    """Exécute ``run_pipeline`` en tâche de fond et renvoie le résultat.
+    Capture les erreurs pour éviter que le bot ne plante."""
     await update.message.reply_text("🚀 Lancement du scraping...")
 
-    loop = asyncio.get_event_loop()
+    loop = asyncio.get_running_loop()
 
     def _run():
         import io, contextlib
@@ -55,12 +56,15 @@ async def run_scraping(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
             run_pipeline()
         return buf.getvalue()
 
-    output = await loop.run_in_executor(None, _run)
-    await update.message.reply_text("✅ Terminé")
-
-    if output:
-        snippet = output[-4000:]
-        await update.message.reply_text(f"```\n{snippet}\n```", parse_mode="Markdown")
+    try:
+        output = await loop.run_in_executor(None, _run)
+        await update.message.reply_text("✅ Terminé")
+        if output:
+            snippet = output[-4000:]
+            await update.message.reply_text(f"```\n{snippet}\n```", parse_mode="Markdown")
+    except Exception as e:
+        logger.error(f"❌ Erreur exécution run_pipeline : {e}", exc_info=True)
+        await update.message.reply_text(f"❌ Erreur : {e}")
 
 
 async def send_db(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
