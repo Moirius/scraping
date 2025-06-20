@@ -1,74 +1,56 @@
-from playwright.sync_api import sync_playwright
-import time
+import json
 import os
-import glob
 import re
+from playwright.sync_api import sync_playwright
+import requests
+import glob
+import time
 from utils.logger import logger
 
 
 # --- INSTAGRAM ---
 def scrape_instagram_profile(url, storage_path="cookie/ig_auth.json"):
-    with sync_playwright() as p:
-        browser = p.chromium.launch(headless=True)
-        context = browser.new_context(storage_state=storage_path, ignore_https_errors=True)
-        page = context.new_page()
+    """Récupère les statistiques d'un profil Instagram via l'API web."""
+    username = url.rstrip("/").split("/")[-1]
 
+    # Charge les cookies Playwright si disponibles
+    cookies = []
+    if os.path.exists(storage_path):
         try:
-            page.goto(url, timeout=30000)
-            time.sleep(3)
-
-            # Accepter les cookies
-            try:
-                accept_btn = page.locator("text=Accepter les cookies").first
-                if accept_btn.is_visible():
-                    accept_btn.click()
-                    time.sleep(2)
-            except:
-                pass
-
-            # Publications
-            posts = None
-            try:
-                posts_locator = page.locator("header section ul li:nth-child(1) span").first
-                posts_text = posts_locator.inner_text(timeout=5000) if posts_locator else None
-                posts = posts_text.strip() if posts_text else None
-            except Exception:
-                logger.warning("⚠️ Publications non trouvées")
-
-            # Abonnés
-            followers = None
-            try:
-                followers_span = page.locator("header section ul li:nth-child(2) span").first
-                if followers_span:
-                    followers = followers_span.get_attribute("title") or followers_span.inner_text(timeout=5000)
-            except Exception:
-                logger.warning("⚠️ Abonnés non trouvés")
-
-            # Abonnements
-            following = None
-            try:
-                following_span = page.locator("header section ul li:nth-child(3) span").first
-                if following_span:
-                    following_text = following_span.inner_text(timeout=5000)
-                    following = following_text.strip() if following_text else None
-            except Exception:
-                logger.warning("⚠️ Abonnements non trouvés")
-
-            return {
-                "followers": followers,
-                "following": following,
-                "posts": posts
-            }
-
+            with open(storage_path, "r", encoding="utf-8") as f:
+                cookies_data = json.load(f)
+                cookies = cookies_data.get("cookies", [])
         except Exception as e:
-            logger.error(f"⚠️ Erreur Instagram : {e}")
-            return {
-                "followers": None,
-                "following": None,
-                "posts": None
-            }
-        finally:
-            browser.close()
+            logger.warning(f"⚠️ Impossible de lire les cookies Instagram : {e}")
+
+    jar = requests.cookies.RequestsCookieJar()
+    for c in cookies:
+        jar.set(c.get("name"), c.get("value"), domain=c.get("domain"), path=c.get("path"))
+
+    headers = {
+        "User-Agent": "Mozilla/5.0",
+        "X-IG-App-ID": "936619743392459",
+    }
+
+    api_url = f"https://i.instagram.com/api/v1/users/web_profile_info/?username={username}"
+
+    try:
+        resp = requests.get(api_url, headers=headers, cookies=jar, timeout=15)
+        resp.raise_for_status()
+        data = resp.json()
+        user = data.get("data", {}).get("user", {})
+        return {
+            "followers": user.get("edge_followed_by", {}).get("count"),
+            "following": user.get("edge_follow", {}).get("count"),
+            "posts": user.get("edge_owner_to_timeline_media", {}).get("count"),
+        }
+    except Exception as e:
+        logger.error(f"⚠️ Erreur Instagram : {e}")
+        return {
+            "followers": None,
+            "following": None,
+            "posts": None,
+        }
 
 def scrape_facebook_page(url, storage_path="cookie/fb_auth.json", debug=False):
     import os, re, glob, time
