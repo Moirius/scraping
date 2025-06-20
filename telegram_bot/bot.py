@@ -1,6 +1,7 @@
 import os
 import sys
 import asyncio
+import time
 
 # Ajoute la racine du projet au path pour les imports
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
@@ -8,6 +9,7 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 from dotenv import load_dotenv
 from telegram import Update
 from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
+from telegram.error import Conflict
 
 from scraping.search_google import search_google_places
 from main import run_pipeline
@@ -111,7 +113,17 @@ def main() -> None:
     app.add_handler(CommandHandler("entreprises", entreprises))
 
     logger.info("🤖 Bot lancé")
-    app.run_polling()
+
+    while True:
+        try:
+            app.run_polling(drop_pending_updates=True)
+            break
+        except Conflict:
+            logger.warning("⚠️ Bot déjà actif ailleurs, nouvelle tentative dans 5s")
+            time.sleep(5)
+        except Exception:
+            logger.error("❌ Erreur inattendue", exc_info=True)
+            time.sleep(5)
 
 
 if __name__ == "__main__":
