@@ -18,7 +18,7 @@ sqlite-utils
 rich
 
 # (optionnel) Pour bot Telegram
-python-telegram-bot==20.3
+python-telegram-bot[webhooks]==20.3
 
 # (optionnel) Pour analyse sémantique plus tard
 openai

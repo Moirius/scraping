@@ -119,13 +119,15 @@ python main.py
 
 
 🌐 Déploiement sur Render
-Le dépôt contient un fichier `render.yaml` qui crée un service de type *worker*.
+Le dépôt contient un fichier `render.yaml` qui crée par défaut un service de type *worker*.
 Render construit l'image à partir du `Dockerfile`, installe les dépendances
-et lance `telegram_bot/bot.py`. Lors de la création du service, veillez à
-sélectionner **Worker** (et non Web Service), sinon la plate‑forme tentera de
+et lance `telegram_bot/bot.py`.
+
+Pour la méthode de *polling* classique, choisissez **Worker** (et non Web Service), sinon la plate‑forme tentera de
 détecter un port ouvert et affichera l'erreur « Port scan timeout reached ».
-Il faut également éviter d'exécuter plusieurs conteneurs en parallèle afin de
-ne pas obtenir l'erreur Telegram « terminated by other getUpdates request ».
+Assurez-vous de n'exécuter qu'un seul conteneur à la fois afin d'éviter l'erreur Telegram « terminated by other getUpdates request ».
+
+Si vous préférez utiliser un webhook (par exemple pour éviter les conflits liés au polling), définissez la variable d'environnement `WEBHOOK_URL` et passez le service en **Web Service** avec un port ouvert. Le bot se mettra alors automatiquement en mode webhook.
 
 
 

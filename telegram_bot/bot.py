@@ -18,6 +18,8 @@ from utils.logger import logger
 # Chargement des variables d'environnement
 load_dotenv()
 BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
+WEBHOOK_URL = os.getenv("WEBHOOK_URL")
+WEBHOOK_PORT = int(os.getenv("WEBHOOK_PORT", "8443"))
 
 if not BOT_TOKEN:
     raise ValueError("🚨 TELEGRAM_BOT_TOKEN est manquant dans le .env")
@@ -116,7 +118,15 @@ def main() -> None:
 
     while True:
         try:
-            app.run_polling(drop_pending_updates=True)
+            if WEBHOOK_URL:
+                app.run_webhook(
+                    listen="0.0.0.0",
+                    port=WEBHOOK_PORT,
+                    webhook_url=WEBHOOK_URL,
+                    drop_pending_updates=True,
+                )
+            else:
+                app.run_polling(drop_pending_updates=True)
             break
         except Conflict:
             logger.warning("⚠️ Bot déjà actif ailleurs, nouvelle tentative dans 5s")
