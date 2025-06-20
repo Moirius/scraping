@@ -119,15 +119,15 @@ python main.py
 
 
 🌐 Déploiement sur Render
-Le dépôt contient un fichier `render.yaml` qui crée par défaut un service de type *worker*.
-Render construit l'image à partir du `Dockerfile`, installe les dépendances
-et lance `telegram_bot/bot.py`.
+Le dépôt contient un fichier `render.yaml` qui lance l'image Docker et exécute `telegram_bot/bot.py`.
 
-Pour la méthode de *polling* classique, choisissez **Worker** (et non Web Service), sinon la plate‑forme tentera de
-détecter un port ouvert et affichera l'erreur « Port scan timeout reached ».
-Assurez-vous de n'exécuter qu'un seul conteneur à la fois afin d'éviter l'erreur Telegram « terminated by other getUpdates request ».
+Par défaut, le service fonctionne en *polling*. Pour passer en mode webhook et éviter les problèmes de multiples instances :
 
-Si vous préférez utiliser un webhook (par exemple pour éviter les conflits liés au polling), définissez la variable d'environnement `WEBHOOK_URL` et passez le service en **Web Service** avec un port ouvert. Le bot se mettra alors automatiquement en mode webhook.
+1. Modifiez `render.yaml` pour utiliser `type: web` à la place de `type: worker`.
+2. Dans Render, ajoutez la variable d'environnement `WEBHOOK_URL` (par exemple `https://mon-bot.onrender.com`).
+3. Le port ouvert par Render est transmis via la variable `PORT` et est pris en charge automatiquement par le bot.
+
+Une fois ces paramètres appliqués, le bot utilisera `run_webhook` et ne fera plus de polling, supprimant ainsi les conflits de type « terminated by other getUpdates request ».
 
 
 

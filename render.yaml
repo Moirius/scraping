@@ -1,6 +1,9 @@
 services:
-  - type: worker
+  - type: web
     name: telegram-bot
     env: docker
     dockerfilePath: Dockerfile
     autoDeploy: true
+    envVars:
+      - key: WEBHOOK_URL
+        sync: false
