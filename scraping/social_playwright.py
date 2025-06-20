@@ -1,17 +1,76 @@
 import json
 import os
 import re
-from playwright.sync_api import sync_playwright
-import requests
 import glob
 import time
+from playwright.sync_api import sync_playwright
+import requests
 from utils.logger import logger
+
+
+def refresh_instagram_session(storage_path="cookie/ig_auth.json"):
+    """Login automatiquement à Instagram pour régénérer le fichier cookie."""
+    username = os.getenv("IG_USERNAME")
+    password = os.getenv("IG_PASSWORD")
+
+    if not username or not password:
+        logger.warning("⚠️ IG_USERNAME ou IG_PASSWORD manquant pour rafraîchir la session Instagram")
+        return False
+
+    try:
+        with sync_playwright() as p:
+            browser = p.chromium.launch(headless=True)
+            context = browser.new_context()
+            page = context.new_page()
+            page.goto("https://www.instagram.com/accounts/login/", timeout=60000)
+            page.fill("input[name='username']", username)
+            page.fill("input[name='password']", password)
+            page.click("button[type='submit']")
+            page.wait_for_url("https://www.instagram.com/", timeout=120000)
+            context.storage_state(path=storage_path)
+            browser.close()
+        logger.info("✅ Session Instagram rafraîchie")
+        return True
+    except Exception as e:
+        logger.error(f"❌ Impossible de rafraîchir la session Instagram : {e}")
+        return False
+
+
+def refresh_facebook_session(storage_path="cookie/fb_auth.json"):
+    """Login automatiquement à Facebook pour régénérer le fichier cookie."""
+    username = os.getenv("FB_USERNAME")
+    password = os.getenv("FB_PASSWORD")
+
+    if not username or not password:
+        logger.warning("⚠️ FB_USERNAME ou FB_PASSWORD manquant pour rafraîchir la session Facebook")
+        return False
+
+    try:
+        with sync_playwright() as p:
+            browser = p.chromium.launch(headless=True)
+            context = browser.new_context()
+            page = context.new_page()
+            page.goto("https://www.facebook.com/login", timeout=60000)
+            page.fill("input[name='email']", username)
+            page.fill("input[name='pass']", password)
+            page.click("button[name='login']")
+            page.wait_for_url(re.compile("facebook.com"), timeout=120000)
+            context.storage_state(path=storage_path)
+            browser.close()
+        logger.info("✅ Session Facebook rafraîchie")
+        return True
+    except Exception as e:
+        logger.error(f"❌ Impossible de rafraîchir la session Facebook : {e}")
+        return False
 
 
 # --- INSTAGRAM ---
 def scrape_instagram_profile(url, storage_path="cookie/ig_auth.json"):
     """Récupère les statistiques d'un profil Instagram via l'API web."""
-    username = url.rstrip("/").split("/")[-1]
+    username = url.rstrip("/").split("/")[-1].split("?")[0]
+
+    if not os.path.exists(storage_path):
+        refresh_instagram_session(storage_path)
 
     # Charge les cookies Playwright si disponibles
     cookies = []
@@ -36,6 +95,15 @@ def scrape_instagram_profile(url, storage_path="cookie/ig_auth.json"):
 
     try:
         resp = requests.get(api_url, headers=headers, cookies=jar, timeout=15)
+        if getattr(resp, "status_code", 200) == 401:
+            logger.info("🔄 Session Instagram invalide, tentative de rafraîchissement")
+            if refresh_instagram_session(storage_path):
+                with open(storage_path, "r", encoding="utf-8") as f:
+                    cookies_data = json.load(f)
+                jar = requests.cookies.RequestsCookieJar()
+                for c in cookies_data.get("cookies", []):
+                    jar.set(c.get("name"), c.get("value"), domain=c.get("domain"), path=c.get("path"))
+                resp = requests.get(api_url, headers=headers, cookies=jar, timeout=15)
         resp.raise_for_status()
         data = resp.json()
         user = data.get("data", {}).get("user", {})
@@ -64,6 +132,9 @@ def scrape_facebook_page(url, storage_path="cookie/fb_auth.json", debug=False):
     next_num = max(nums) + 1 if nums else 1
     screenshot_path = os.path.join(screenshot_dir, f"screenshot_fb_debug_{next_num}.png")
 
+    if not os.path.exists(storage_path):
+        refresh_facebook_session(storage_path)
+
     with sync_playwright() as p:
         browser = p.chromium.launch(headless=True)
         context = browser.new_context(storage_state=storage_path, ignore_https_errors=True)
@@ -73,6 +144,13 @@ def scrape_facebook_page(url, storage_path="cookie/fb_auth.json", debug=False):
             logger.info(f"🔍 Scraping de la page Facebook : {url}")
             page.goto(url, wait_until="domcontentloaded", timeout=60000)
             time.sleep(5)
+            if "login" in page.url:
+                logger.info("🔄 Session Facebook invalide, tentative de rafraîchissement")
+                if refresh_facebook_session(storage_path):
+                    context = browser.new_context(storage_state=storage_path, ignore_https_errors=True)
+                    page = context.new_page()
+                    page.goto(url, wait_until="domcontentloaded", timeout=60000)
+                    time.sleep(5)
 
             try:
                 accept_btn = page.locator("text=Autoriser tous les cookies").first
