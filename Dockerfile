@@ -1,5 +1,8 @@
 FROM mcr.microsoft.com/playwright/python:v1.52.0-jammy
 
+# Assure que Playwright utilise le dossier partagé pour les navigateurs
+ENV PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
+
 WORKDIR /app
 COPY . .
 
