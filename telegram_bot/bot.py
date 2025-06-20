@@ -19,7 +19,8 @@ from utils.logger import logger
 load_dotenv()
 BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
 WEBHOOK_URL = os.getenv("WEBHOOK_URL")
-WEBHOOK_PORT = int(os.getenv("WEBHOOK_PORT", "8443"))
+# Render fournit la variable PORT lors de l'utilisation d'un Web Service
+WEBHOOK_PORT = int(os.getenv("WEBHOOK_PORT", os.getenv("PORT", "8443")))
 
 if not BOT_TOKEN:
     raise ValueError("🚨 TELEGRAM_BOT_TOKEN est manquant dans le .env")
