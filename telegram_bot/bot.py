@@ -10,6 +10,7 @@ from telegram import Update
 from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
 
 from scraping.search_google import search_google_places
+from main import run_pipeline
 from utils.logger import logger
 
 # Chargement des variables d'environnement
@@ -37,19 +38,21 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
 
 async def run_scraping(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    """Lance main.py puis renvoie le résultat."""
+    """Exécute run_pipeline en tâche de fond et renvoie le résultat."""
     await update.message.reply_text("🚀 Lancement du scraping...")
 
-    process = await asyncio.create_subprocess_exec(
-        sys.executable,
-        "main.py",
-        stdout=asyncio.subprocess.PIPE,
-        stderr=asyncio.subprocess.STDOUT,
-    )
-    stdout, _ = await process.communicate()
-    await update.message.reply_text(f"✅ Terminé (code {process.returncode})")
+    loop = asyncio.get_event_loop()
 
-    output = stdout.decode("utf-8")
+    def _run():
+        import io, contextlib
+        buf = io.StringIO()
+        with contextlib.redirect_stdout(buf):
+            run_pipeline()
+        return buf.getvalue()
+
+    output = await loop.run_in_executor(None, _run)
+    await update.message.reply_text("✅ Terminé")
+
     if output:
         snippet = output[-4000:]
         await update.message.reply_text(f"```\n{snippet}\n```", parse_mode="Markdown")

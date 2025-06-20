@@ -18,13 +18,10 @@ def is_valid_url(url):
     return url and url.startswith("http") and re.match(r"^https?://[^\s]+$", url)
 
 
-if __name__ == "__main__":
+def run_pipeline(keyword="restauration", city="Rennes", target_count=5):
+    """Execute l'ensemble du scraping et de l'insertion en base."""
     logger.info("🚀 Démarrage du script principal")
     init_db()
-
-    keyword = "restauration"
-    city = "Rennes"
-    target_count = 5
 
     logger.info(f"🔍 Scraping Google Places API pour '{keyword}' à {city}")
     bruts = search_google_places(keyword, city, max_results=20)
@@ -135,8 +132,6 @@ if __name__ == "__main__":
             insert_infos_web(entreprise_id, infos)
             logger.info(f"📩 Infos web insérées pour l’entreprise ID {entreprise_id}")
 
-            # 🔍 Scraping Instagram & Facebook si lien trouvé
-            # 🔍 Scraping Instagram & Facebook si lien trouvé
             for info in infos:
                 if info["champ"] == "instagram":
                     insta_url = info["valeur"]
@@ -177,12 +172,10 @@ if __name__ == "__main__":
                             if fb_stats.get("website"):
                                 website = fb_stats["website"]
 
-                                # 🔁 Éviter les boucles infinies : ne pas re-scraper si c’est le site initial
                                 if website.strip("/") == site.strip("/"):
                                     logger.info("♻️ Site web déjà scrappé, on évite la boucle.")
                                     continue
 
-                                # ✅ Vérification d'URL valide
                                 if not is_valid_url(website):
                                     logger.warning(f"⚠️ URL invalide ignorée : {website}")
                                     continue
@@ -198,9 +191,12 @@ if __name__ == "__main__":
                     except Exception as e:
                         logger.warning(f"⚠️ Scraping Facebook échoué pour {fb_url} : {e}")
 
-
-
         except Exception:
             logger.error(f"💥 Erreur scraping site {site}", exc_info=True)
 
     logger.info("✅ Script terminé")
+
+
+if __name__ == "__main__":
+    run_pipeline()
+
